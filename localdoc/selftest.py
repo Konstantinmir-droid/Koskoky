@@ -37,6 +37,46 @@ def run(report: str) -> int:
             raise RuntimeError('Bundled model missing')
         with tempfile.TemporaryDirectory(prefix='localdoc-selftest-') as tmp:
             folder = Path(tmp)
+            # Exercise dynamically imported readers inside the frozen executable.
+            import fitz
+            import zipfile
+            from openpyxl import Workbook
+            pdf = folder/'synthetic.pdf'
+            with fitz.open() as document:
+                page = document.new_page()
+                page.insert_text((50,50), 'Contract 125. Alpha LLC. Date 2026-10-15. Synthetic test document.')
+                document.save(pdf)
+            if 'Contract 125' not in reader.read(pdf):
+                raise RuntimeError('Bundled PDF reader failed')
+            office = folder/'synthetic.docx'
+            with zipfile.ZipFile(office,'w') as archive:
+                archive.writestr('word/document.xml',
+                    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+                    '<w:body><w:p><w:r><w:t>Contract 125</w:t></w:r></w:p></w:body></w:document>')
+            if 'Contract 125' not in reader.read(office):
+                raise RuntimeError('Bundled DOCX reader failed')
+            spreadsheet = folder/'synthetic.xlsx'
+            book = Workbook()
+            book.active.append(['Contract',125])
+            book.save(spreadsheet)
+            book.close()
+            if 'Contract\t125' not in reader.read(spreadsheet):
+                raise RuntimeError('Bundled XLSX reader failed')
+            picture = folder/'synthetic.jpg'
+            image.save(picture)
+            if '125' not in reader.read(picture):
+                raise RuntimeError('Bundled image reader failed')
+            scan = folder/'synthetic-scan.pdf'
+            import io
+            image_bytes = io.BytesIO()
+            image.save(image_bytes,format='PNG')
+            with fitz.open() as document:
+                page = document.new_page(width=600,height=250)
+                page.insert_image(page.rect,stream=image_bytes.getvalue())
+                document.save(scan)
+            if '125' not in reader.read(scan):
+                raise RuntimeError('Bundled scanned PDF OCR failed')
+            results['checks'].append('bundled_pdf_docx_xlsx_image_scanned_pdf')
             source = folder/'synthetic.txt'
             source.write_text('Договор № 125 от 15.10.2026\n'
                               'Исполнитель: ООО Альфа. Заказчик: ООО Бета.\n'

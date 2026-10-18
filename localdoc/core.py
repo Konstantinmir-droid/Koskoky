@@ -24,7 +24,8 @@ SCHEMA = {
 SCHEMA['properties']['document_type'] = {'enum': [*TYPES, None]}
 SCHEMA['properties']['document_date'] = {'anyOf': [{'type': 'string', 'format': 'date'}, {'type': 'null'}]}
 SCHEMA['properties']['inn'] = {'anyOf': [{'type': 'string', 'pattern': r'^([0-9]{10}|[0-9]{12})$'}, {'type': 'null'}]}
-SCHEMA['properties']['amount'] = {'anyOf': [{'type': 'string', 'pattern': r'^[0-9]+(\.[0-9]{1,2})?$'}, {'type': 'null'}]}
+# A character class avoids the converter emitting an invalid GBNF literal "\\.".
+SCHEMA['properties']['amount'] = {'anyOf': [{'type': 'string', 'pattern': r'^[0-9]+([.][0-9]{1,2})?$'}, {'type': 'null'}]}
 SCHEMA['properties']['currency'] = {'enum': ['RUB', 'USD', 'EUR', 'CNY', 'GBP', None]}
 SCHEMA['properties']['evidence'] = {'type': 'object', 'additionalProperties': False,
     'required': list(FIELDS), 'properties': {k: {'type': ['string', 'null']} for k in FIELDS}}
