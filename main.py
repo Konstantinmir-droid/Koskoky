@@ -1,0 +1,24 @@
+ name: Build Windows EXE
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller pymupdf python-docx openpyxl pillow pytesseract requests
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --name "DocRenamer_AI" main.py
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DocRenamer_Windows_Portable
+          path: dist/DocRenamer_AI/
