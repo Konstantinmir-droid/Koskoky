@@ -12,6 +12,9 @@ on:
       - 'scripts/audit-macos-minimum.py'
       - 'scripts/prepare-assets.py'
       - 'LocalDocRenamer.spec'
+concurrency:
+  group: legacy-mac-${{ github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -51,7 +54,7 @@ jobs:
           python3 scripts/audit-macos-minimum.py dist/LocalDocRenamer.app 10.13
           codesign --force --deep --sign - dist/LocalDocRenamer.app
           codesign --verify --deep --strict dist/LocalDocRenamer.app
-          dist/LocalDocRenamer.app/Contents/MacOS/LocalDocRenamer --self-test "$PWD/macos2011-selftest.json"
+          env -u PYTHONPATH -u PYTHONHOME -u DYLD_LIBRARY_PATH -u DYLD_FALLBACK_LIBRARY_PATH -u DYLD_FRAMEWORK_PATH PATH=/usr/bin:/bin:/usr/sbin:/sbin dist/LocalDocRenamer.app/Contents/MacOS/LocalDocRenamer --self-test "$PWD/macos2011-selftest.json"
       - name: Create DMG candidate
         run: |
           mkdir -p release/dmg
@@ -69,4 +72,12 @@ jobs:
             macos2011-selftest.json
             asset-provenance.json
           compression-level: 0
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Mac2011-build-diagnostics
+          path: '*selftest.json'
+          if-no-files-found: ignore
           retention-days: 7

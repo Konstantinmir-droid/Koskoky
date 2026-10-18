@@ -13,6 +13,12 @@ for path in root.rglob('*'):
         if f.read(4) not in magic: continue
     count += 1
     output = subprocess.check_output(['otool','-l',str(path)],text=True)
+    dependencies = subprocess.check_output(['otool','-L',str(path)],text=True)
+    for line in dependencies.splitlines():
+        if not line.startswith('\t'): continue
+        dependency=line.strip().split(' (compatibility version',1)[0]
+        if dependency.startswith('/') and not dependency.startswith(('/usr/lib/','/System/Library/')):
+            errors.append(str(path.relative_to(root))+': external dependency '+dependency)
     for command in output.split('Load command '):
         if not re.search(r'cmd (LC_VERSION_MIN_MACOSX|LC_BUILD_VERSION)\s',command):continue
         match=re.search(r'^\s*(?:version|minos)\s+([0-9.]+)',command,re.M)

@@ -1,4 +1,4 @@
-#define AppName "LocalDocRenamer"
+﻿#define AppName "LocalDocRenamer"
 #define AppVersion "0.1.0"
 #if !FileExists("..\dist\LocalDocRenamer\LocalDocRenamer.exe")
 #error Build the complete Windows distribution first.
