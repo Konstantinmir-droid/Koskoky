@@ -61,7 +61,7 @@ class Engine:
             if start + size >= len(tokens):
                 break
 
-    def analyze(self, path: Path, cancelled=lambda: False) -> Record:
+    def analyze(self, path: Path, cancelled=lambda: False, *, raise_errors=False) -> Record:
         record = Record(str(path))
         try:
             record.digest = fingerprint(path)
@@ -103,6 +103,10 @@ class Engine:
             record.issues.append('Обязательна ручная проверка ролей сторон, даты и реквизитов')
             record.issues.extend('Не найдено: ' + k for k in FIELDS if merged[k] is None)
         except Exception as exc:
+            # Only the synthetic packaged self-test requests a full traceback.
+            # Normal document processing must never log document content or paths.
+            if raise_errors:
+                raise
             record.error = str(exc) if isinstance(exc, DocumentError) else 'Ошибка обработчика (' + type(exc).__name__ + ')'
         return record
 

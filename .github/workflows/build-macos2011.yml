@@ -8,6 +8,7 @@ on:
       - 'requirements-macos2011.txt'
       - 'localdoc/**'
       - 'main.py'
+      - 'tests/**'
       - 'scripts/build-macos2011-native.sh'
       - 'scripts/build-legacy-llama.py'
       - 'scripts/audit-macos-minimum.py'
@@ -67,7 +68,7 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           python3 scripts/preflight.py
-          python3 -m unittest discover -s tests -v
+          python3 -X faulthandler -m unittest discover -s tests -v
           python3 -m PyInstaller --noconfirm --clean LocalDocRenamer.spec
           python3 scripts/audit-macos-minimum.py dist/LocalDocRenamer.app 10.13
           codesign --force --deep --sign - dist/LocalDocRenamer.app

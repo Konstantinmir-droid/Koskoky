@@ -43,7 +43,7 @@ def run(report: str) -> int:
                               'Предмет договора: Аренда оборудования.\n'
                               'Стоимость: 1250,50 руб.\n',encoding='utf-8')
             engine = Engine(root, models[0])
-            record = engine.analyze(source)
+            record = engine.analyze(source, raise_errors=True)
             if record.error:
                 raise RuntimeError(record.error)
             validate_structure(record.data)
@@ -68,6 +68,7 @@ def run(report: str) -> int:
         results['status'] = 'passed'
     except Exception as exc:
         results['error'] = type(exc).__name__ + ': ' + str(exc)
+        results['synthetic_test_traceback'] = traceback.format_exc()
     finally:
         if engine is not None:
             engine.close()

@@ -9,11 +9,23 @@ from unittest.mock import patch
 from localdoc.qt_compat import QApplication, QFileDialog, QMessageBox, QPushButton
 from localdoc.gui import Window, Editor
 from localdoc.core import FIELDS, Record, fingerprint
+from localdoc.qt_compat import QT_BINDING
+if QT_BINDING == 'PySide2':
+    from shiboken2 import delete as delete_qt
+else:
+    from shiboken6 import delete as delete_qt
 
 
 class GuiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls): cls.app = QApplication.instance() or QApplication([])
+    @classmethod
+    def tearDownClass(cls):
+        # Destroy native widgets while Python and the binding are still alive.
+        # Letting Qt5 tear them down during interpreter finalization can crash.
+        cls.app.processEvents()
+        delete_qt(cls.app)
+        cls.app = None
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
@@ -27,7 +39,10 @@ class GuiTests(unittest.TestCase):
         self.record = Record(str(source), fingerprint(source), self.data, text=source.read_text('utf-8'))
         self.window.records = [self.record]
     def tearDown(self):
-        self.window.close(); self.state_patch.stop(); self.tmp.cleanup()
+        self.window.close()
+        delete_qt(self.window)
+        self.app.processEvents()
+        self.state_patch.stop(); self.tmp.cleanup()
     def test_manual_review_and_preview(self):
         editor = Editor(self.record, self.window)
         editor.make_name()
