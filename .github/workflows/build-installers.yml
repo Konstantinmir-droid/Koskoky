@@ -1,0 +1,97 @@
+name: Build installer candidates
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - 'build/localdoc-*'
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: localdoc-build
+          python-version: '3.11'
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install build dependencies
+        shell: pwsh -l {0}
+        run: |
+          conda install --yes --override-channels -c conda-forge tesseract
+          if ($LASTEXITCODE -ne 0) { throw 'Conda failed' }
+          $env:CMAKE_ARGS='-DGGML_CUDA=OFF -DGGML_NATIVE=OFF -DGGML_AVX512=OFF'
+          python -m pip install -r requirements.txt huggingface_hub pip-licenses
+          if ($LASTEXITCODE -ne 0) { throw 'pip failed' }
+          python scripts/prepare-assets.py
+          if ($LASTEXITCODE -ne 0) { throw 'Asset staging failed' }
+          pip-licenses --with-license-file --format=json --output-file=vendor/licenses/python-packages.json
+      - name: Test and freeze
+        shell: pwsh -l {0}
+        run: |
+          python scripts/preflight.py
+          if ($LASTEXITCODE -ne 0) { throw 'Preflight failed' }
+          $env:QT_QPA_PLATFORM='offscreen'
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+          python -m PyInstaller --noconfirm --clean LocalDocRenamer.spec
+          if ($LASTEXITCODE -ne 0) { throw 'Freezing failed' }
+          $report = Join-Path $PWD 'windows-selftest.json'
+          $p = Start-Process -FilePath "$PWD/dist/LocalDocRenamer/LocalDocRenamer.exe" -ArgumentList '--self-test', "`"$report`"" -PassThru -Wait
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $report)) { throw 'Packaged self-test failed' }
+          if ((Get-Content $report -Raw | ConvertFrom-Json).status -ne 'passed') { throw 'Packaged test report failed' }
+      - name: Create installer
+        shell: pwsh -l {0}
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup 6 missing on builder' }
+          & $iscc installer/windows.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+          Get-FileHash release/*.exe -Algorithm SHA256 | Format-List | Out-File release/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Windows-x64-installer-candidate
+          path: |
+            release/*
+            windows-selftest.json
+            asset-provenance.json
+          compression-level: 0
+          retention-days: 7
+  macos-intel:
+    if: ${{ false }} # Modern Qt6 build is incompatible with the requested Mac 2011.
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: x64
+      - name: Prepare public build assets
+        run: |
+          brew install tesseract antiword
+          python3 -m pip install huggingface_hub
+          python3 scripts/prepare-assets.py
+      - name: Build and test app and DMG
+        run: bash scripts/build-macos-intel.sh
+      - name: Hash installer
+        run: shasum -a 256 release/*.dmg > release/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Intel-installer-candidate
+          path: |
+            release/*.dmg
+            release/SHA256.txt
+            release-macos-selftest.json
+            asset-provenance.json
+          compression-level: 0
+          retention-days: 7

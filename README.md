@@ -1,7 +1,7 @@
 # LocalDocRenamer
 
-Offline document analysis with local Qwen3, OCR, review and reversible renaming.
+Local Qwen3 and OCR document analyzer with review and reversible renaming.
 
-Source and installer build pipelines are being prepared. No installer is release-verified yet.
+See README_RU.md and VERIFICATION_RU.md for current status. Installer candidates are not a verified release.
 
-User documents must never be uploaded to this repository or the CI system.
+Never upload user documents to this repository.
