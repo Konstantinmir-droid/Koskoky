@@ -1,7 +1,49 @@
 # LocalDocRenamer
 
-Offline document analysis with local Qwen3, OCR, review and reversible renaming.
+Программа на русском языке для локального анализа и переименования документов.
+В установочные комплекты включены Qwen3 4B GGUF, llama.cpp, OCR rus+eng и Python runtime.
+Пользователь не устанавливает Python или нейросеть отдельно. Во время обработки
+используется системный запрет сети; документы и результаты остаются на компьютере.
 
-Source and installer build pipelines are being prepared. No installer is release-verified yet.
+## Скачать установочную сборку
 
-User documents must never be uploaded to this repository or the CI system.
+| Система | Скачать ZIP | Размер | Что запустить после распаковки |
+|---|---|---|---|
+| Windows 10/11 x64 | [Установщик EXE](https://github.com/Konstantinmir-droid/Koskoky/actions/runs/39116220531/artifacts/12132549442) | 2,57 ГБ | `release/LocalDocRenamer-Setup-Windows-x64.exe` |
+| Intel Mac, цель High Sierra 10.13+ | [Образ DMG](https://github.com/Konstantinmir-droid/Koskoky/actions/runs/39116224426/artifacts/12132803707) | 2,58 ГБ | `release/LocalDocRenamer-macOS10.13-Intel-candidate.dmg` |
+
+Для скачивания нужен вход в GitHub. Эти архивы хранятся до **25 октября 2026 года**.
+В каждом есть установочный файл, отчет проверки и SHA256.txt. Исходники через
+кнопку Code / Download ZIP установщика не содержат.
+
+Windows: запустите EXE и завершите установку. Права администратора нужны для
+правил запрета исходящих соединений. Mac: откройте DMG и перенесите приложение
+в Applications / Программы. Модель 4B уже включена; для другой локальной модели
+Qwen3 4B/8B GGUF есть выбор в настройках.
+
+Для Mac 2011 требуется как минимум macOS High Sierra 10.13 и Intel с AVX;
+желательно от 8 ГБ памяти. На физическом Mac 2011 запуск ещё не испытан.
+Приложение Mac имеет ad-hoc подпись, без Apple Developer ID и notarization.
+
+## Что проверено
+
+Обе сборки успешно завершились 18 октября 2026 года из общего коммита
+`b51fa9a3e4ddd89cb2f94918c29e559085953eac`. В каждой прошли 50 тестов,
+реальный локальный OCR, чтение PDF/DOCX/XLSX/изображений/сканированного PDF,
+реальная генерация Qwen3, JSON, переименование и отмена. Windows EXE также
+выполнил установку, после которой проверена установленная копия с очищенной
+средой Python/PATH. Mac прошёл аудит 148 нативных файлов на минимальную ОС
+и проверку подписи приложения внутри смонтированного DMG.
+
+CI работает на Windows Server 2022 и macOS 15 Intel. Испытания физических
+Windows 10/11 и Mac 2011, независимый сетевой аудит и оценка точности на реальных
+документах не проводились. Модель может ошибаться; переименование требует
+ручного подтверждения. Это установочные кандидаты с пройденными автоматическими
+проверками, а не подтверждение полной приемки всех возможных документов и ОС.
+
+- [Установка и первый документ](INSTALL_RU.md)
+- [Возможности, ограничения форматов и конфиденциальность](README_RU.md)
+- [Подробные результаты проверки](VERIFICATION_RU.md)
+- [Метаданные и контрольные суммы архивов](verification/builds.json)
+- [Windows: успешная сборка](https://github.com/Konstantinmir-droid/Koskoky/actions/runs/39116220531)
+- [Mac: успешная сборка](https://github.com/Konstantinmir-droid/Koskoky/actions/runs/39116224426)

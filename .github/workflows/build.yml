@@ -1,24 +1,143 @@
-name: Build Windows EXE
-
-on: [push]
-
+name: Build installer candidates
+on:
+  workflow_dispatch:
+  push:
+    branches: ['build/localdoc-*']
+    paths:
+      - 'requirements.txt'
+      - 'localdoc/**'
+      - 'main.py'
+      - 'tests/**'
+      - 'LocalDocRenamer.spec'
+      - 'installer/**'
+      - 'scripts/prepare-assets.py'
+      - 'scripts/block-network.ps1'
+      - 'scripts/verify-network.ps1'
+      - 'scripts/unblock-network.ps1'
+      - '.github/workflows/build.yml'
+concurrency:
+  group: windows-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
-  build:
-    runs-on: windows-latest
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Pytho
-        uses: actions/setup-python@v5
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: localdoc-build
+          python-version: '3.11'
+          miniforge-version: latest
+          channels: conda-forge
+          channel-priority: strict
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install build dependencies
+        shell: pwsh -l {0}
+        run: |
+          conda install --yes --override-channels -c conda-forge tesseract
+          if ($LASTEXITCODE -ne 0) { throw 'Conda failed' }
+          $env:CMAKE_ARGS='-DGGML_CUDA=OFF -DGGML_OPENMP=OFF -DGGML_RPC=OFF -DLLAVA_BUILD=OFF -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_AVX512=OFF -DGGML_AVX_VNNI=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF'
+          python -m pip install -r requirements.txt huggingface_hub pip-licenses
+          if ($LASTEXITCODE -ne 0) { throw 'pip failed' }
+          python scripts/prepare-assets.py
+          if ($LASTEXITCODE -ne 0) { throw 'Asset staging failed' }
+          pip-licenses --with-license-file --format=json --output-file=vendor/licenses/python-packages.json
+      - name: Test and freeze
+        shell: pwsh -l {0}
+        run: |
+          python scripts/preflight.py
+          if ($LASTEXITCODE -ne 0) { throw 'Preflight failed' }
+          $env:QT_QPA_PLATFORM='offscreen'
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
+          python -m PyInstaller --noconfirm --clean LocalDocRenamer.spec
+          if ($LASTEXITCODE -ne 0) { throw 'Freezing failed' }
+          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+          & ./scripts/block-network.ps1 -Directory "$PWD/dist/LocalDocRenamer"
+          if ($LASTEXITCODE -ne 0) { throw 'Network rules failed' }
+          $report = Join-Path $PWD 'windows-selftest.json'
+          $savedPath = $env:PATH
+          $env:PATH = "$env:SystemRoot/System32;$env:SystemRoot;$env:SystemRoot/System32/WindowsPowerShell/v1.0"
+          $env:PYTHONPATH = ''
+          $env:PYTHONHOME = ''
+          try {
+            $p = Start-Process -FilePath "$PWD/dist/LocalDocRenamer/LocalDocRenamer.exe" -ArgumentList '--self-test', "`"$report`"" -PassThru -Wait
+          } finally { $env:PATH = $savedPath }
+          if (Test-Path $report) { Get-Content $report -Raw | Write-Host }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $report)) { throw 'Packaged self-test failed' }
+          if ((Get-Content $report -Raw | ConvertFrom-Json).status -ne 'passed') { throw 'Packaged test report failed' }
+      - name: Create installer
+        shell: pwsh -l {0}
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup 6 missing on builder' }
+          & $iscc installer/windows.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+          $setup = (Get-ChildItem release/*.exe | Select-Object -First 1).FullName
+          $installed = Join-Path $env:RUNNER_TEMP 'localdoc-installed'
+          $p = Start-Process -FilePath $setup -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$installed`"" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw 'Installer execution failed' }
+          $report = Join-Path $PWD 'installed-windows-selftest.json'
+          $savedPath = $env:PATH
+          $env:PATH = "$env:SystemRoot/System32;$env:SystemRoot;$env:SystemRoot/System32/WindowsPowerShell/v1.0"
+          $env:PYTHONPATH = ''
+          $env:PYTHONHOME = ''
+          try {
+            $p = Start-Process -FilePath "$installed/LocalDocRenamer.exe" -ArgumentList '--self-test', "`"$report`"" -PassThru -Wait
+          } finally { $env:PATH = $savedPath }
+          if (Test-Path $report) { Get-Content $report -Raw | Write-Host }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $report)) { throw 'Installed runtime failed' }
+          if ((Get-Content $report -Raw | ConvertFrom-Json).status -ne 'passed') { throw 'Installed smoke report failed' }
+          Get-FileHash release/*.exe -Algorithm SHA256 | Format-List | Out-File release/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Windows-x64-installer-candidate
+          path: |
+            release/*
+            windows-selftest.json
+            installed-windows-selftest.json
+            asset-provenance.json
+          compression-level: 0
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Windows-build-diagnostics
+          path: '*selftest.json'
+          if-no-files-found: ignore
+          retention-days: 7
+  macos-intel:
+    if: ${{ false }} # Modern Qt6 build is incompatible with the requested Mac 2011.
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
+          architecture: x64
+      - name: Prepare public build assets
         run: |
-          pip install pyinstaller pymupdf python-docx openpyxl pillow pytesseract requests
-      - name: Build with PyInstaller
-        run: |
-          pyinstaller --noconfirm --onedir --windowed --name "DocRenamer_AI" main.py
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+          brew install tesseract antiword
+          python3 -m pip install huggingface_hub
+          python3 scripts/prepare-assets.py
+      - name: Build and test app and DMG
+        run: bash scripts/build-macos-intel.sh
+      - name: Hash installer
+        run: shasum -a 256 release/*.dmg > release/SHA256.txt
+      - uses: actions/upload-artifact@v4
         with:
-          name: DocRenamer_Windows_Portable
-          path: dist/DocRenamer_AI/
+          name: macOS-Intel-installer-candidate
+          path: |
+            release/*.dmg
+            release/SHA256.txt
+            release-macos-selftest.json
+            asset-provenance.json
+          compression-level: 0
+          retention-days: 7

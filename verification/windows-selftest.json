@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "checks": [
+    "os_network_denial",
+    "bundled_ocr",
+    "bundled_pdf_docx_xlsx_image_scanned_pdf",
+    "bundled_qwen_schema_and_fields",
+    "rename_and_undo"
+  ],
+  "limitations": [
+    "Synthetic smoke test only; does not prove field accuracy on real documents.",
+    "Python sockets denied; native traffic capture still required.",
+    "Does not test old OS versions or installer interaction."
+  ],
+  "synthetic_model": {
+    "raw_results": [
+      {
+        "document_type": "Договор",
+        "organization": "ООО Альфа",
+        "document_number": "125",
+        "document_date": "2026-10-15",
+        "subject": "Аренда оборудования",
+        "inn": null,
+        "amount": "1250.50",
+        "currency": "RUB",
+        "counterparty": "ООО Бета",
+        "evidence": {
+          "document_type": "Договор",
+          "organization": "ООО Альфа",
+          "document_number": "125",
+          "document_date": "2026-10-15",
+          "subject": "Аренда оборудования",
+          "inn": null,
+          "amount": "1250.50",
+          "currency": "RUB",
+          "counterparty": "ООО Бета"
+        }
+      }
+    ],
+    "verified": {
+      "document_type": "Договор",
+      "organization": "ООО Альфа",
+      "document_number": "125",
+      "document_date": "2026-10-15",
+      "subject": "Аренда оборудования",
+      "inn": null,
+      "amount": "1250.50",
+      "currency": "RUB",
+      "counterparty": "ООО Бета",
+      "evidence": {
+        "document_type": "Договор",
+        "organization": "ООО Альфа",
+        "document_number": "125",
+        "document_date": "15.10.2026",
+        "subject": "Аренда оборудования",
+        "inn": null,
+        "amount": "1250,50",
+        "currency": "руб.",
+        "counterparty": "ООО Бета"
+      }
+    },
+    "issues": [
+      "Цитата восстановлена по исходному формату: document_date",
+      "Цитата восстановлена по исходному формату: amount",
+      "Цитата восстановлена по исходному формату: currency",
+      "Обязательна ручная проверка ролей сторон, даты и реквизитов",
+      "Не найдено: inn"
+    ]
+  }
+}

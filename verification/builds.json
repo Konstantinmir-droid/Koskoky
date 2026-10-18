@@ -1,0 +1,75 @@
+{
+  "built_at": "2026-10-18",
+  "source_commit": "b51fa9a3e4ddd89cb2f94918c29e559085953eac",
+  "local_tests_passed": 50,
+  "windows": {
+    "status": "success",
+    "run_id": 39116220531,
+    "job_id": 117642440149,
+    "tests_passed": 50,
+    "packaged_selftest": "passed",
+    "installed_selftest": "passed",
+    "host": "windows-2022",
+    "target": "Windows 10/11 x64",
+    "artifact": {
+      "id": 12132549442,
+      "name": "Windows-x64-installer-candidate",
+      "size_in_bytes": 2571060428,
+      "url": "https://api.github.com/repos/Konstantinmir-droid/Koskoky/actions/artifacts/12132549442",
+      "archive_download_url": "https://api.github.com/repos/Konstantinmir-droid/Koskoky/actions/artifacts/12132549442/zip",
+      "expired": false,
+      "created_at": "2026-10-18T10:03:35Z",
+      "expires_at": "2026-10-25T10:03:14Z",
+      "updated_at": "2026-10-18T10:03:35Z",
+      "digest": "sha256:e244854d2598d430e11686f2e6ddab49f783ff227c1901a8e7af127c41202b5f",
+      "workflow_run": {
+        "id": 39116220531,
+        "repository_id": 885877774,
+        "head_repository_id": 885877774,
+        "head_branch": "build/localdoc-windows-and-mac-2011",
+        "head_sha": "b51fa9a3e4ddd89cb2f94918c29e559085953eac"
+      }
+    }
+  },
+  "mac": {
+    "status": "success",
+    "run_id": 39116224426,
+    "job_id": 117642451769,
+    "tests_passed": 50,
+    "packaged_selftest": "passed (exit code 0)",
+    "minimum_os_audit": {
+      "passed": true,
+      "macho_files": 148,
+      "target": "10.13"
+    },
+    "dmg_mounted_and_signature_verified": true,
+    "host": "macos-15-intel",
+    "target": "macOS 10.13 Intel with AVX",
+    "physical_mac2011_tested": false,
+    "artifact": {
+      "id": 12132803707,
+      "name": "Mac2011-HighSierra-installer-candidate",
+      "size_in_bytes": 2584064944,
+      "url": "https://api.github.com/repos/Konstantinmir-droid/Koskoky/actions/artifacts/12132803707",
+      "archive_download_url": "https://api.github.com/repos/Konstantinmir-droid/Koskoky/actions/artifacts/12132803707/zip",
+      "expired": false,
+      "created_at": "2026-10-18T10:05:12Z",
+      "expires_at": "2026-10-25T10:04:11Z",
+      "updated_at": "2026-10-18T10:05:12Z",
+      "digest": "sha256:2c8696e0086797c7f6f242e3d7ec0d04be8cffeb5570c6610a2409b606db612b",
+      "workflow_run": {
+        "id": 39116224426,
+        "repository_id": 885877774,
+        "head_repository_id": 885877774,
+        "head_branch": "build/mac2011",
+        "head_sha": "b51fa9a3e4ddd89cb2f94918c29e559085953eac"
+      }
+    }
+  },
+  "limitations": [
+    "No physical Windows10/11 or Mac2011 test",
+    "No independent native network traffic capture",
+    "No representative real-document accuracy evaluation",
+    "No Developer ID/notarization or commercial Windows signing certificate"
+  ]
+}
