@@ -41,8 +41,25 @@ jobs:
           python3 -m pip install -r requirements-macos2011.txt huggingface_hub
       - name: Build patched legacy CPU engine
         run: python3 scripts/build-legacy-llama.py
+      - uses: actions/cache/restore@v4
+        id: native-cache
+        with:
+          path: |
+            vendor/tesseract/tesseract
+            vendor/antiword
+            vendor/licenses/legacy-native-source
+          key: legacy-macos10.13-native-${{ hashFiles('scripts/build-macos2011-native.sh') }}
       - name: Compile old-OS native OCR
+        if: steps.native-cache.outputs.cache-hit != 'true'
         run: bash scripts/build-macos2011-native.sh
+      - uses: actions/cache/save@v4
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            vendor/tesseract/tesseract
+            vendor/antiword
+            vendor/licenses/legacy-native-source
+          key: legacy-macos10.13-native-${{ hashFiles('scripts/build-macos2011-native.sh') }}
       - name: Stage public model and languages
         run: python3 scripts/prepare-assets.py
       - name: Tests and bundle

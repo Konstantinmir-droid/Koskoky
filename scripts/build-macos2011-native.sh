@@ -24,7 +24,7 @@ tar xf antiword.tar.gz
 (cd libpng-1.6.43 && ./configure --prefix="$prefix" --disable-shared --enable-static && make -j4 && make install)
 (cd leptonica-1.82.0 && ./configure --prefix="$prefix" --disable-shared --enable-static --without-libjpeg --without-libtiff --without-giflib --without-libwebp --without-libopenjpeg && make -j4 && make install)
 (cd tesseract-4.1.3 && ./autogen.sh && ./configure --prefix="$prefix" --disable-shared --enable-static --disable-openmp --disable-graphics --without-curl --without-archive && make -j4 && make install)
-(cd antiword/src && make -f Makevars CC=clang "CFLAGS=$CFLAGS")
+(cd antiword/src && make -f Makevars CC=clang "CFLAGS=$CFLAGS -DNDEBUG")
 cd ../..
 cp "$prefix/bin/tesseract" vendor/tesseract/tesseract
 cp "$base/src/antiword/src/antiword" vendor/antiword/antiword
