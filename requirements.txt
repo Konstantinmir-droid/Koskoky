@@ -1,5 +1,5 @@
 PySide6==6.8.3
-llama-cpp-python>=0.3.8,<0.4
+llama-cpp-python==0.3.16
 PyMuPDF>=1.25,<2
 Pillow>=11,<13
 openpyxl>=3.1.5,<4

@@ -2,6 +2,14 @@ name: Build installer candidates
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - 'requirements.txt'
+      - 'localdoc/**'
+      - 'tests/**'
+      - 'LocalDocRenamer.spec'
+      - 'installer/**'
+      - 'scripts/prepare-assets.py'
+      - '.github/workflows/build-installers.yml'
 concurrency:
   group: windows-build-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -29,7 +37,7 @@ jobs:
         run: |
           conda install --yes --override-channels -c conda-forge tesseract
           if ($LASTEXITCODE -ne 0) { throw 'Conda failed' }
-          $env:CMAKE_ARGS='-DGGML_CUDA=OFF -DGGML_NATIVE=OFF -DGGML_AVX512=OFF'
+          $env:CMAKE_ARGS='-DGGML_CUDA=OFF -DGGML_RPC=OFF -DLLAVA_BUILD=OFF -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_AVX512=OFF -DGGML_AVX_VNNI=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF'
           python -m pip install -r requirements.txt huggingface_hub pip-licenses
           if ($LASTEXITCODE -ne 0) { throw 'pip failed' }
           python scripts/prepare-assets.py

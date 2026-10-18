@@ -8,6 +8,7 @@ on:
       - 'requirements-macos2011.txt'
       - 'localdoc/**'
       - 'scripts/build-macos2011-native.sh'
+      - 'scripts/build-legacy-llama.py'
       - 'scripts/audit-macos-minimum.py'
       - 'scripts/prepare-assets.py'
       - 'LocalDocRenamer.spec'
@@ -23,14 +24,19 @@ jobs:
       CMAKE_ARGS: '-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DGGML_METAL=OFF -DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF -DGGML_OPENMP=OFF -DGGML_RPC=OFF -DGGML_BACKEND_DL=OFF -DLLAMA_CURL=OFF -DGGML_NATIVE=OFF -DGGML_AVX=ON -DGGML_AVX2=OFF -DGGML_AVX512=OFF -DGGML_AVX_VNNI=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF'
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          architecture: x64
+      - name: Install official Python with old macOS deployment target
+        run: |
+          curl --fail --location --retry 3 https://www.python.org/ftp/python/3.10.11/python-3.10.11-macos11.pkg -o python.pkg
+          sudo installer -pkg python.pkg -target /
+          bash "/Applications/Python 3.10/Install Certificates.command"
+          echo '/Library/Frameworks/Python.framework/Versions/3.10/bin' >> "$GITHUB_PATH"
+          rm python.pkg
       - name: Install build tools and legacy Python dependencies
         run: |
           brew install autoconf automake libtool pkg-config
           python3 -m pip install -r requirements-macos2011.txt huggingface_hub
+      - name: Build patched legacy CPU engine
+        run: python3 scripts/build-legacy-llama.py
       - name: Compile old-OS native OCR
         run: bash scripts/build-macos2011-native.sh
       - name: Stage public model and languages
