@@ -2,9 +2,9 @@ name: Build installer candidates
 on:
   workflow_dispatch:
   pull_request:
-  push:
-    branches:
-      - 'build/localdoc-*'
+concurrency:
+  group: windows-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

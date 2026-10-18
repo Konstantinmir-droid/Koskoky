@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
+from localdoc.qt_compat import QApplication, QFileDialog, QMessageBox, QPushButton
 from localdoc.gui import Window, Editor
 from localdoc.core import FIELDS, Record, fingerprint
 
@@ -66,5 +66,5 @@ class GuiTests(unittest.TestCase):
     def test_error_cannot_be_manually_approved(self):
         self.record.error = 'OCR error'
         editor = Editor(self.record, self.window)
-        save = [b for b in editor.findChildren(__import__('PySide6.QtWidgets', fromlist=['QPushButton']).QPushButton) if b.text() == 'Сохранить проверку'][0]
+        save = [b for b in editor.findChildren(QPushButton) if b.text() == 'Сохранить проверку'][0]
         self.assertFalse(save.isEnabled())

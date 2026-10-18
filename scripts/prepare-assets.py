@@ -60,6 +60,10 @@ if os.name == 'nt':
     for parent in (prefix/'Library/share/licenses', prefix/'info/licenses'):
         if parent.is_dir():
             shutil.copytree(parent, LICENSES/'native-licenses'/parent.name, dirs_exist_ok=True)
+elif sys.platform == 'darwin' and os.environ.get('LOCALDOC_LEGACY_MAC') == '1':
+    for tool in ('tesseract','antiword'):
+        if not (VENDOR/tool/tool).is_file():
+            raise RuntimeError('Build legacy native tools before preparing assets')
 elif sys.platform == 'darwin':
     if os.uname().machine != 'x86_64':
         raise RuntimeError('Intel x86_64 build required')

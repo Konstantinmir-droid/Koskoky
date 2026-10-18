@@ -4,8 +4,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+from .qt_compat import (Qt, QThread, Signal, QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QFileDialog, QMessageBox, QTableWidget, QTableWidgetItem, QAbstractItemView,
     QDialog, QFormLayout, QLineEdit, QPlainTextEdit, QLabel, QComboBox, QCheckBox, QProgressBar)
 from .core import (FIELDS, SUPPORTED, TYPES, REQUIRED, Record, RenameJournal, DocumentError,

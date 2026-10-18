@@ -29,4 +29,4 @@ if sys.platform == 'darwin':
                  info_plist={'CFBundleShortVersionString':'0.1.0',
                              'CFBundleVersion':'1',
                              'NSHighResolutionCapable':True,
-                             'LSMinimumSystemVersion':'13.0'})
+                             'LSMinimumSystemVersion':'10.13' if __import__('os').environ.get('LOCALDOC_LEGACY_MAC') == '1' else '13.0'})
