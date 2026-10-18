@@ -464,6 +464,12 @@ def main():
     os.environ['DO_NOT_TRACK'] = '1'
     disable_network()
     app = QApplication(sys.argv)
+    try:
+        from .privacy import enforce_offline
+        enforce_offline()
+    except Exception as exc:
+        QMessageBox.critical(None, 'Сетевая защита', str(exc))
+        return 1
     app.setApplicationName('LocalDocRenamer')
     try:
         window = Window()

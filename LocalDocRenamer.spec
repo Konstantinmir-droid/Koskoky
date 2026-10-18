@@ -17,6 +17,8 @@ for folder in ['vendor', 'models']:
 for name in ['README_RU.md', 'THIRD_PARTY_NOTICES.md', 'schema.json', 'asset-provenance.json']:
     if (root/name).is_file():
         datas.append((str(root/name), '.'))
+for name in ['block-network.ps1','verify-network.ps1','unblock-network.ps1']:
+    datas.append((str(root/'scripts'/name), '.'))
 a = Analysis([str(root/'main.py')], pathex=[str(root)], binaries=binaries, datas=datas,
              hiddenimports=hiddenimports, noarchive=False)
 pyz = PYZ(a.pure)

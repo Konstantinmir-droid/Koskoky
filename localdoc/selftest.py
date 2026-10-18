@@ -19,6 +19,9 @@ def run(report: str) -> int:
     ]}
     engine = None
     try:
+        from .privacy import enforce_offline
+        enforce_offline()
+        results['checks'].append('os_network_denial')
         reader = Extractor(root)
         from PIL import Image, ImageDraw, ImageFont
         image = Image.new('RGB',(1200,500),'white')

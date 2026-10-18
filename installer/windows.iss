@@ -7,9 +7,9 @@
 AppId={{540F15AA-576D-47B3-887C-D13BB1BCB8F4}
 AppName={#AppName}
 AppVersion={#AppVersion}
-DefaultDirName={localappdata}\Programs\{#AppName}
+DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
@@ -30,3 +30,19 @@ Name: "{group}\{#AppName}"; Filename: "{app}\LocalDocRenamer.exe"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\LocalDocRenamer.exe"; Tasks: desktopicon
 [Run]
 Filename: "{app}\LocalDocRenamer.exe"; Description: "Запустить программу"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\_internal\unblock-network.ps1"" -Directory ""{app}"""; Flags: runhidden waituntilterminated
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Code: Integer;
+begin
+  if CurStep = ssPostInstall then begin
+    if not Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+      '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\_internal\block-network.ps1') + '" -Directory "' + ExpandConstant('{app}') + '"',
+      '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
+      RaiseException('Не удалось включить запрет исходящих соединений. Приложение не сможет обрабатывать документы.');
+  end;
+end;

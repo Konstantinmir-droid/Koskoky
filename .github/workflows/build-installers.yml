@@ -9,6 +9,9 @@ on:
       - 'LocalDocRenamer.spec'
       - 'installer/**'
       - 'scripts/prepare-assets.py'
+      - 'scripts/block-network.ps1'
+      - 'scripts/verify-network.ps1'
+      - 'scripts/unblock-network.ps1'
       - '.github/workflows/build-installers.yml'
 concurrency:
   group: windows-build-${{ github.head_ref || github.ref_name }}
@@ -53,6 +56,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
           python -m PyInstaller --noconfirm --clean LocalDocRenamer.spec
           if ($LASTEXITCODE -ne 0) { throw 'Freezing failed' }
+          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+          & ./scripts/block-network.ps1 -Directory "$PWD/dist/LocalDocRenamer"
+          if ($LASTEXITCODE -ne 0) { throw 'Network rules failed' }
           $report = Join-Path $PWD 'windows-selftest.json'
           $p = Start-Process -FilePath "$PWD/dist/LocalDocRenamer/LocalDocRenamer.exe" -ArgumentList '--self-test', "`"$report`"" -PassThru -Wait
           if ($p.ExitCode -ne 0 -or -not (Test-Path $report)) { throw 'Packaged self-test failed' }
