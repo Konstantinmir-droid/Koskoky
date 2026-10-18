@@ -2,7 +2,7 @@ name: Build Mac 2011 legacy candidate
 on:
   workflow_dispatch:
   push:
-    branches: ['build/localdoc-*', 'build/mac2011']
+    branches: ['build/mac2011']
     paths:
       - '.github/workflows/build-macos2011.yml'
       - 'requirements-macos2011.txt'

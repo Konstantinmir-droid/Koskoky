@@ -51,6 +51,15 @@ class Engine:
             raise DocumentError('Требуется Qwen3 4B или Qwen3 8B (не VL и не MoE)')
         self.context = context
         self.grammar = LlamaGrammar.from_json_schema(json.dumps(SCHEMA), verbose=False)
+        # Version 0.3.16 does not reject a null grammar sampler before adding it
+        # to the chain. Validate the generated GBNF before the first decode.
+        from llama_cpp import llama_cpp as native
+        probe = native.llama_sampler_init_grammar(self.llm._model.vocab,
+                    self.grammar._grammar.encode('utf-8'), self.grammar._root.encode('utf-8'))
+        if not probe:
+            self.llm.close()
+            raise DocumentError('Не удалось скомпилировать JSON-грамматику')
+        native.llama_sampler_free(probe)
 
     def chunks(self, text):
         tokens = self.llm.tokenize(text.encode('utf-8'), add_bos=False)
