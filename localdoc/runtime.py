@@ -24,3 +24,21 @@ def state_directory(resources: Path) -> Path:
 def native_tool(resources: Path, name: str) -> Path:
     suffix = '.exe' if os.name == 'nt' else ''
     return resources / 'vendor' / name / (name + suffix)
+
+
+def ensure_stdio():
+    # Windows GUI bootloaders may leave descriptor 1/2 invalid. llama.cpp's output
+    # suppression duplicates these descriptors even with verbose=False.
+    # Route them to the null device before importing the inference library.
+    for descriptor in (1, 2):
+        try:
+            os.fstat(descriptor)
+        except OSError:
+            opened = os.open(os.devnull, os.O_WRONLY)
+            if opened != descriptor:
+                os.dup2(opened, descriptor)
+                os.close(opened)
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, 'w', encoding='utf-8')

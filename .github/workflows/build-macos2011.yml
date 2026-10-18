@@ -7,6 +7,7 @@ on:
       - '.github/workflows/build-macos2011.yml'
       - 'requirements-macos2011.txt'
       - 'localdoc/**'
+      - 'main.py'
       - 'scripts/build-macos2011-native.sh'
       - 'scripts/build-legacy-llama.py'
       - 'scripts/audit-macos-minimum.py'

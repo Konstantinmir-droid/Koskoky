@@ -1,4 +1,6 @@
 import sys
+from localdoc.runtime import ensure_stdio
+ensure_stdio()
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == '--self-test':
         from localdoc.selftest import run

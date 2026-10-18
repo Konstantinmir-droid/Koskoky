@@ -5,6 +5,7 @@ on:
     paths:
       - 'requirements.txt'
       - 'localdoc/**'
+      - 'main.py'
       - 'tests/**'
       - 'LocalDocRenamer.spec'
       - 'installer/**'
