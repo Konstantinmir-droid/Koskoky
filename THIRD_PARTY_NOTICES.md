@@ -7,7 +7,7 @@ legal clearance for an assembled commercial package.
 
 - Qwen3: use the license shipped with the exact GGUF repository/revision.
 - llama.cpp and llama-cpp-python: include exact bundled revisions and MIT notices.
-- PySide6 / Qt: LGPL/GPL/commercial licensing; assess the chosen distribution route
+- PySide6 / Qt (Windows), PyQt5 / Qt (legacy Mac): LGPL/GPL/commercial licensing; assess the chosen distribution route
   and preserve the required replacement/debugging rights and notices.
 - PyMuPDF / MuPDF: AGPL/commercial licensing. Do not distribute a closed-source
   product using this stack without selecting an appropriate license arrangement.

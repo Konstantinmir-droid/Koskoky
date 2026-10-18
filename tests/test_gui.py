@@ -10,8 +10,8 @@ from localdoc.qt_compat import QApplication, QFileDialog, QMessageBox, QPushButt
 from localdoc.gui import Window, Editor
 from localdoc.core import FIELDS, Record, fingerprint
 from localdoc.qt_compat import QT_BINDING
-if QT_BINDING == 'PySide2':
-    from shiboken2 import delete as delete_qt
+if QT_BINDING == 'PyQt5':
+    from PyQt5.sip import delete as delete_qt
 else:
     from shiboken6 import delete as delete_qt
 
