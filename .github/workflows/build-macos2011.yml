@@ -10,6 +10,7 @@ on:
       - 'main.py'
       - 'tests/**'
       - 'scripts/build-macos2011-native.sh'
+      - 'scripts/build-macos2011-jpeg.sh'
       - 'scripts/build-legacy-llama.py'
       - 'scripts/audit-macos-minimum.py'
       - 'scripts/test-native-macos.py'
@@ -68,6 +69,11 @@ jobs:
           key: legacy-macos10.13-native-${{ hashFiles('scripts/build-macos2011-native.sh') }}
       - name: Stage public model and languages
         run: python3 scripts/prepare-assets.py
+      - name: Build old-OS JPEG8 for Qt
+        run: bash scripts/build-macos2011-jpeg.sh
+      - name: Verify source runtime on synthetic documents
+        run: |
+          python3 main.py --self-test "$PWD/source-macos-selftest.json" || { cat source-macos-selftest.json; exit 1; }
       - name: Tests and bundle
         env:
           QT_QPA_PLATFORM: offscreen

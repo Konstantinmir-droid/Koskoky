@@ -70,7 +70,7 @@ class Engine:
             if start + size >= len(tokens):
                 break
 
-    def analyze(self, path: Path, cancelled=lambda: False, *, raise_errors=False) -> Record:
+    def analyze(self, path: Path, cancelled=lambda: False, *, raise_errors=False, diagnostics=None) -> Record:
         record = Record(str(path))
         try:
             record.digest = fingerprint(path)
@@ -95,6 +95,8 @@ class Engine:
                     raw = json.loads(response['choices'][0]['text'])
                 except (ValueError, KeyError):
                     raise DocumentError('Модель вернула невалидный JSON')
+                if diagnostics is not None:
+                    diagnostics.setdefault('raw_results', []).append(raw)
                 data, issues = verify_evidence(raw, chunk)
                 record.issues.extend(issues)
                 results.append(data)

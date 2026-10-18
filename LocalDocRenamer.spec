@@ -21,6 +21,13 @@ for name in ['block-network.ps1','verify-network.ps1','unblock-network.ps1']:
     datas.append((str(root/'scripts'/name), '.'))
 a = Analysis([str(root/'main.py')], pathex=[str(root)], binaries=binaries, datas=datas,
              hiddenimports=hiddenimports, noarchive=False)
+if sys.platform == 'darwin' and __import__('os').environ.get('LOCALDOC_LEGACY_MAC') == '1':
+    jpeg = root/'vendor/compat/libjpeg.8.dylib'
+    if not jpeg.is_file():
+        raise SystemExit('Missing legacy JPEG8 library')
+    # Override the resolver's modern Homebrew JPEG8 with the same ABI built for 10.13.
+    a.binaries = [(dest, str(jpeg) if Path(dest).name == 'libjpeg.8.dylib' else src, kind)
+                  for dest, src, kind in a.binaries]
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='LocalDocRenamer', debug=False,
           bootloader_ignore_signals=False, strip=False, upx=False, console=False,
