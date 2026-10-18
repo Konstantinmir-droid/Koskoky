@@ -7,6 +7,23 @@ from localdoc import privacy
 from localdoc.core import DocumentError
 
 class PrivacyTests(unittest.TestCase):
+    def test_guard_preserves_imports_and_denies_socket_creation(self):
+        import subprocess
+        import sys
+        code = '''
+from localdoc.engine import disable_network
+from localdoc.core import DocumentError
+disable_network()
+import ssl, urllib.request, socket
+for operation in [socket.socket, lambda: socket.create_connection(('127.0.0.1', 9)), lambda: socket.getaddrinfo('localhost', 9)]:
+    try:
+        operation()
+    except DocumentError:
+        continue
+    raise SystemExit('Network guard was bypassed')
+'''
+        result = subprocess.run([sys.executable,'-c',code],capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr)
     def test_packaged_windows_missing_guard_blocks(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(privacy.sys,'platform','win32'), patch.object(privacy.sys,'frozen',True,create=True), patch.object(privacy,'_active',False), patch.object(privacy,'resource_root',return_value=Path(tmp)):
             with self.assertRaises(DocumentError): privacy.enforce_offline()

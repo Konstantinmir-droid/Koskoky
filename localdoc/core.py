@@ -118,13 +118,50 @@ def inn_valid(value: str) -> bool:
     return len(digits) == 12 and check([7,2,4,10,3,5,9,4,6,8], digits[10]) and check([3,7,2,4,10,3,5,9,4,6,8], digits[11])
 
 
+def date_literals(value: str, text: str):
+    expected = dt.date.fromisoformat(value)
+    for match in re.finditer(r'(?<![0-9])(?:[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}[./][0-9]{1,2}[./][0-9]{4})(?![0-9])', text):
+        literal = match.group()
+        for fmt in ('%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y'):
+            try:
+                if dt.datetime.strptime(literal, fmt).date() == expected:
+                    yield literal
+                    break
+            except ValueError:
+                pass
+
+
+def canonical_evidence(key: str, value: str, text: str) -> str | None:
+    """Recover a literal quote only for exact, reversible format conversions."""
+    if key == 'document_date':
+        return next(date_literals(value, text), None)
+    if key == 'amount':
+        from decimal import Decimal, InvalidOperation
+        for match in re.finditer(r'(?<!\d)\d[\d \u00a0\u202f]*(?:[,.]\d{1,2})?(?!\d)', text):
+            try:
+                if Decimal(re.sub(r'\s', '', match.group()).replace(',', '.')) == Decimal(value):
+                    before, after = text[:match.start()], text[match.end():]
+                    if re.search(r'\d[./-]$', before) or re.match(r'[./-]\d', after):
+                        continue  # Never recover an amount from a date fragment.
+                    labelled = re.search(r'\b(?:итого|стоимость|сумма|всего|цена|к\s+оплате)\s*[:=]?\s*$', before, re.I)
+                    money = re.match(r'(?:руб(?:\.|лей\b|ля\b|ль\b|\b)|RUB\b|₽|USD\b|US\$|доллар|EUR\b|€|евро|CNY\b|юан|GBP\b|£)', after.lstrip(), re.I)
+                    if labelled or money:
+                        return match.group().strip()
+            except InvalidOperation:
+                pass
+    if key == 'currency':
+        patterns = {'RUB': r'RUB|руб(?:\.|лей|ля|ль)?|₽', 'USD': r'USD|доллар США|US\$',
+                    'EUR': r'EUR|€|евро', 'CNY': r'CNY|юан(?:ь|я|ей)', 'GBP': r'GBP|£'}
+        pattern = patterns.get(value)
+        if pattern:
+            match = re.search(r'(?<![A-Za-zА-Яа-яЁё])(?:' + pattern + r')(?![A-Za-zА-Яа-яЁё])', text, re.I)
+            return match.group() if match else None
+    return None
+
+
 def supported_value(key: str, value: str, quote: str) -> bool:
     if key == 'document_date':
-        date = dt.date.fromisoformat(value)
-        # Require a complete date inside the evidence, never accept separate unrelated digits.
-        patterns = [date.isoformat(), f'{date.day:02d}.{date.month:02d}.{date.year}',
-                    f'{date.day}.{date.month}.{date.year}', f'{date.day:02d}/{date.month:02d}/{date.year}']
-        return any(re.search(r'(?<![0-9])' + re.escape(p) + r'(?![0-9])', quote) for p in patterns)
+        return next(date_literals(value, quote), None) is not None
     if key == 'amount':
         from decimal import Decimal, InvalidOperation
         for match in re.finditer(r'(?<!\d)\d[\d \u00a0\u202f]*(?:[,.]\d{1,2})?(?!\d)', quote):
@@ -155,6 +192,13 @@ def verify_evidence(value: dict, text: str) -> tuple[dict, list[str]]:
         if item is None:
             value['evidence'][key] = None
             continue
+        # Some models repeat the canonical value instead of quoting its source form.
+        # Recover only exact date/decimal/currency equivalents, never arbitrary text.
+        if quote and normalized(quote) == normalized(item) and normalized(quote) not in normalized(text):
+            literal = canonical_evidence(key, item, text)
+            if literal is not None:
+                quote = value['evidence'][key] = literal
+                issues.append('Цитата восстановлена по исходному формату: ' + key)
         if (not quote or normalized(quote) not in normalized(text)
                 or not supported_value(key, item, quote)
                 or (key == 'inn' and not inn_valid(item))):

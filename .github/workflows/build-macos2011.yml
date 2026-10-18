@@ -2,7 +2,7 @@ name: Build Mac 2011 legacy candidate
 on:
   workflow_dispatch:
   push:
-    branches: ['build/localdoc-*']
+    branches: ['build/mac2011']
     paths:
       - '.github/workflows/build-macos2011.yml'
       - 'requirements-macos2011.txt'
@@ -10,6 +10,7 @@ on:
       - 'main.py'
       - 'tests/**'
       - 'scripts/build-macos2011-native.sh'
+      - 'scripts/build-macos2011-jpeg.sh'
       - 'scripts/build-legacy-llama.py'
       - 'scripts/audit-macos-minimum.py'
       - 'scripts/test-native-macos.py'
@@ -68,6 +69,8 @@ jobs:
           key: legacy-macos10.13-native-${{ hashFiles('scripts/build-macos2011-native.sh') }}
       - name: Stage public model and languages
         run: python3 scripts/prepare-assets.py
+      - name: Build old-OS JPEG8 for Qt
+        run: bash scripts/build-macos2011-jpeg.sh
       - name: Tests and bundle
         env:
           QT_QPA_PLATFORM: offscreen
@@ -82,10 +85,16 @@ jobs:
       - name: Create DMG candidate
         run: |
           mkdir -p release/dmg
-          cp -R dist/LocalDocRenamer.app release/dmg/
+          rm -rf dist/LocalDocRenamer
+          mv dist/LocalDocRenamer.app release/dmg/
           ln -s /Applications release/dmg/Applications
           hdiutil create -volname LocalDocRenamer -srcfolder release/dmg -ov -format UDZO release/LocalDocRenamer-macOS10.13-Intel-candidate.dmg
           rm -rf release/dmg
+          localdoc_mount="$RUNNER_TEMP/localdoc-dmg-check"
+          mkdir -p "$localdoc_mount"
+          hdiutil attach -readonly -nobrowse -mountpoint "$localdoc_mount" release/LocalDocRenamer-macOS10.13-Intel-candidate.dmg
+          codesign --verify --deep --strict "$localdoc_mount/LocalDocRenamer.app"
+          hdiutil detach "$localdoc_mount"
           shasum -a 256 release/*.dmg > release/SHA256.txt
       - uses: actions/upload-artifact@v4
         with:

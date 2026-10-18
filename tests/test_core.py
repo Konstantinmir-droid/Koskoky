@@ -50,6 +50,30 @@ class SchemaTests(unittest.TestCase):
         data = sample(); data['inn'] = '1234567890'; data['evidence']['inn'] = '1234567890'
         result, _ = verify_evidence(data, '1234567890')
         self.assertIsNone(result['inn'])
+    def test_canonical_values_get_literal_source_evidence(self):
+        data = sample(); data.update(amount='1250.50', currency='RUB')
+        data['evidence'].update(document_date='2026-10-15', amount='1250.50', currency='RUB')
+        text = 'Договор 125 от 15.10.2026 ООО Альфа. Стоимость: 1250,50 руб.'
+        result, _ = verify_evidence(data, text)
+        self.assertEqual(result['document_date'], '2026-10-15')
+        self.assertEqual(result['amount'], '1250.50')
+        self.assertEqual(result['currency'], 'RUB')
+        for key in ('document_date','amount','currency'):
+            self.assertIn(result['evidence'][key], text)
+    def test_canonical_evidence_cannot_create_absent_values(self):
+        data = sample(); data.update(document_date='2027-10-15', amount='9999.00', currency='USD')
+        data['evidence'].update(document_date='2027-10-15', amount='9999.00', currency='USD')
+        result, _ = verify_evidence(data, 'Договор 125 от 15.10.2026 ООО Альфа. Стоимость: 1250,50 руб.')
+        for key in ('document_date','amount','currency'):
+            self.assertIsNone(result[key]); self.assertIsNone(result['evidence'][key])
+    def test_mixed_zero_padding_in_complete_date(self):
+        data = sample(); data['document_date']='2026-01-05'; data['evidence']['document_date']='2026-01-05'
+        result, _ = verify_evidence(data, 'Договор 125 ООО Альфа от 5.01.2026')
+        self.assertEqual(result['evidence']['document_date'], '5.01.2026')
+    def test_amount_recovery_cannot_use_a_year(self):
+        data = sample(); data['amount']='2026.00'; data['evidence']['amount']='2026.00'
+        result, _ = verify_evidence(data, 'Договор 125 ООО Альфа от 15.10.2026')
+        self.assertIsNone(result['amount'])
 
 
 class RenameTests(unittest.TestCase):

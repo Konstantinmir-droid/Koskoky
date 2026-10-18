@@ -83,7 +83,10 @@ def run(report: str) -> int:
                               'Предмет договора: Аренда оборудования.\n'
                               'Стоимость: 1250,50 руб.\n',encoding='utf-8')
             engine = Engine(root, models[0])
-            record = engine.analyze(source, raise_errors=True)
+            results['synthetic_model'] = {}
+            record = engine.analyze(source, raise_errors=True, diagnostics=results['synthetic_model'])
+            results['synthetic_model']['verified'] = record.data
+            results['synthetic_model']['issues'] = record.issues
             if record.error:
                 raise RuntimeError(record.error)
             validate_structure(record.data)

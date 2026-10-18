@@ -3,10 +3,11 @@ try:
     from PySide6 import QtCore, QtWidgets
     QT_BINDING = 'PySide6'
 except ImportError:
-    from PySide2 import QtCore, QtWidgets
-    QT_BINDING = 'PySide2'
+    from PyQt5 import QtCore, QtWidgets
+    QT_BINDING = 'PyQt5'
 
-Qt, QThread, Signal = QtCore.Qt, QtCore.QThread, QtCore.Signal
+Qt, QThread = QtCore.Qt, QtCore.QThread
+Signal = QtCore.pyqtSignal if QT_BINDING == 'PyQt5' else QtCore.Signal
 QMainWindow = QtWidgets.QMainWindow
 QWidget = QtWidgets.QWidget
 QVBoxLayout = QtWidgets.QVBoxLayout
@@ -27,12 +28,12 @@ QProgressBar = QtWidgets.QProgressBar
 
 class QApplication(QtWidgets.QApplication):
     def exec(self):
-        if QT_BINDING == 'PySide2':
+        if QT_BINDING == 'PyQt5':
             return super().exec_()
         return super().exec()
 
 class QDialog(QtWidgets.QDialog):
     def exec(self):
-        if QT_BINDING == 'PySide2':
+        if QT_BINDING == 'PyQt5':
             return super().exec_()
         return super().exec()
